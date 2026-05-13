@@ -1,0 +1,33 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Build outputs
+dist/
+build/
+
+# Environment files (NEVER commit real secrets)
+.env
+*.env
+!.env.example
+
+# Firebase service account keys – SENSITIVE
+serviceAccountKey.json
+*serviceAccountKey*.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+.venv/
+venv/
+bridge.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
