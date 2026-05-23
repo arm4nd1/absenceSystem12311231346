@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard, Users, BookOpen, ClipboardList,
   Fingerprint, LogOut, Activity, ChevronRight,
-  ShieldCheck, UserCircle,
+  ShieldCheck, UserCircle, GraduationCap,
 } from "lucide-react";
 import { useBridgeStatus } from "../hooks/useSessions";
 import clsx from "clsx";
@@ -31,6 +31,7 @@ export default function Layout() {
     { to: "/subjects",   icon: BookOpen,        label: "Subjects",   show: isInstructor },
     { to: "/attendance", icon: ClipboardList,   label: "Attendance", show: true },
     { to: "/sessions",   icon: Fingerprint,     label: "Sessions",   show: isInstructor },
+    { to: "/marks",      icon: GraduationCap,   label: "Marks",      show: isInstructor },
     { to: "/reports",    icon: Activity,        label: "Reports",    show: isInstructor },
     { to: "/users",      icon: ShieldCheck,     label: "Users",      show: isAdmin },
     { to: "/profile",    icon: UserCircle,      label: "My Profile", show: !isInstructor },

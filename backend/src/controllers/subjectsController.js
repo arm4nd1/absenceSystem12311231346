@@ -91,4 +91,25 @@ async function unenrollStudent(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { getAll, getOne, create, update, remove, enrollStudent, unenrollStudent };
+async function updateGradeComponents(req, res, next) {
+  try {
+    const { gradeComponents } = req.body;
+    if (!Array.isArray(gradeComponents)) {
+      return res.status(400).json({ error: "gradeComponents must be an array." });
+    }
+    for (const c of gradeComponents) {
+      if (!c.id || !c.name || c.maxMark === undefined) {
+        return res.status(400).json({ error: "Each component needs id, name, and maxMark." });
+      }
+      if (Number(c.maxMark) < 0) {
+        return res.status(400).json({ error: "maxMark must be >= 0." });
+      }
+    }
+    const ref = getDb().collection(COLLECTION).doc(req.params.id);
+    if (!(await ref.get()).exists) return res.status(404).json({ error: "Subject not found." });
+    await ref.update({ gradeComponents, updatedAt: new Date() });
+    res.json({ ok: true, gradeComponents });
+  } catch (err) { next(err); }
+}
+
+module.exports = { getAll, getOne, create, update, remove, enrollStudent, unenrollStudent, updateGradeComponents };

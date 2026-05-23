@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BookPlus, Search, Pencil, Trash2, UserPlus, UserMinus } from "lucide-react";
+import { BookPlus, Search, Pencil, Trash2, UserPlus, UserMinus, BarChart2, Plus, X } from "lucide-react";
 import toast from "react-hot-toast";
 import PageHeader     from "../components/PageHeader";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -9,6 +9,110 @@ import {
   useDeleteSubject, useEnrollStudent, useUnenrollStudent,
 } from "../hooks/useSubjects";
 import { useStudents } from "../hooks/useStudents";
+import { useUpdateGradeComponents } from "../hooks/useMarks";
+
+const DEFAULT_COMPONENTS = [
+  { id: "midterm", name: "Midterm",    maxMark: 30 },
+  { id: "final",   name: "Final Exam", maxMark: 50 },
+  { id: "other",   name: "Coursework", maxMark: 20 },
+];
+
+function GradeComponentsModal({ subject, onClose }) {
+  const [components, setComponents] = useState(
+    subject.gradeComponents?.length ? subject.gradeComponents : DEFAULT_COMPONENTS
+  );
+  const updateMutation = useUpdateGradeComponents();
+  const total = components.reduce((s, c) => s + (Number(c.maxMark) || 0), 0);
+
+  function addRow() {
+    setComponents(prev => [
+      ...prev,
+      { id: `comp_${Date.now()}`, name: "", maxMark: 0 },
+    ]);
+  }
+
+  function removeRow(idx) {
+    setComponents(prev => prev.filter((_, i) => i !== idx));
+  }
+
+  function update(idx, field, value) {
+    setComponents(prev => prev.map((c, i) =>
+      i === idx ? { ...c, [field]: field === "maxMark" ? Number(value) : value } : c
+    ));
+  }
+
+  async function handleSave() {
+    for (const c of components) {
+      if (!c.name.trim()) { toast.error("All components need a name."); return; }
+      if (Number(c.maxMark) < 0) { toast.error("Max mark must be >= 0."); return; }
+    }
+    try {
+      await updateMutation.mutateAsync({ subjectId: subject.id, gradeComponents: components });
+      toast.success("Grade components saved.");
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to save.");
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-slate-500">
+        Configure the grade breakdown for this subject. Click a field to edit it.
+      </p>
+
+      <div className="space-y-2">
+        {components.map((comp, idx) => (
+          <div key={comp.id} className="flex items-center gap-3">
+            <input
+              className="input flex-1"
+              placeholder="Component name (e.g. Midterm)"
+              value={comp.name}
+              onChange={e => update(idx, "name", e.target.value)}
+            />
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number"
+                min={0}
+                className="input w-20 text-center"
+                placeholder="Max"
+                value={comp.maxMark}
+                onChange={e => update(idx, "maxMark", e.target.value)}
+              />
+              <span className="text-xs text-slate-500 whitespace-nowrap">pts</span>
+            </div>
+            <button
+              onClick={() => removeRow(idx)}
+              className="p-1.5 text-slate-600 hover:text-red-400 transition-colors shrink-0"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={addRow}
+        className="flex items-center gap-1.5 text-sm text-blue-400 hover:text-blue-300 transition-colors"
+      >
+        <Plus size={14} /> Add component
+      </button>
+
+      <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+        <span className={`text-sm font-medium ${total === 100 ? "text-emerald-400" : "text-amber-400"}`}>
+          Total: {total} / 100{total !== 100 && " (should be 100)"}
+        </span>
+        <button
+          onClick={handleSave}
+          disabled={updateMutation.isPending}
+          className="btn-primary"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function SubjectForm({ initial = {}, onSubmit, loading }) {
   const [form, setForm] = useState({
@@ -50,10 +154,11 @@ function SubjectForm({ initial = {}, onSubmit, loading }) {
 }
 
 export default function SubjectsPage() {
-  const [search,       setSearch]       = useState("");
-  const [showCreate,   setShowCreate]   = useState(false);
-  const [editSubject,  setEditSubject]  = useState(null);
-  const [rosterSubject,setRosterSubject]= useState(null);
+  const [search,          setSearch]          = useState("");
+  const [showCreate,      setShowCreate]      = useState(false);
+  const [editSubject,     setEditSubject]     = useState(null);
+  const [rosterSubject,   setRosterSubject]   = useState(null);
+  const [gradesSubject,   setGradesSubject]   = useState(null);
 
   const { data: subjects = [], isLoading } = useSubjects();
   const { data: students = [] }            = useStudents();
@@ -170,6 +275,11 @@ export default function SubjectsPage() {
                                          hover:bg-blue-500/10 transition-all" title="Manage roster">
                         <UserPlus size={15} />
                       </button>
+                      <button onClick={() => setGradesSubject(s)}
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-purple-400
+                                         hover:bg-purple-500/10 transition-all" title="Grade components">
+                        <BarChart2 size={15} />
+                      </button>
                       <button onClick={() => setEditSubject(s)}
                               className="p-1.5 rounded-lg text-slate-500 hover:text-amber-400
                                          hover:bg-amber-500/10 transition-all">
@@ -197,6 +307,14 @@ export default function SubjectsPage() {
         {editSubject && (
           <SubjectForm initial={editSubject} onSubmit={handleUpdate}
                        loading={updateMutation.isPending} />
+        )}
+      </Modal>
+
+      {/* Grade Components modal */}
+      <Modal isOpen={!!gradesSubject} onClose={() => setGradesSubject(null)}
+             title={`Grade Components – ${gradesSubject?.name}`}>
+        {gradesSubject && (
+          <GradeComponentsModal subject={gradesSubject} onClose={() => setGradesSubject(null)} />
         )}
       </Modal>
 

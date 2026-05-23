@@ -13,6 +13,7 @@ const studentsRoutes   = require("./routes/students");
 const subjectsRoutes   = require("./routes/subjects");
 const attendanceRoutes = require("./routes/attendance");
 const sessionsRoutes   = require("./routes/sessions");
+const marksRoutes      = require("./routes/marks");
 
 initFirebase();
 
@@ -38,6 +39,7 @@ app.use("/api/students",   studentsRoutes);
 app.use("/api/subjects",   subjectsRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/sessions",   sessionsRoutes);
+app.use("/api/marks",      marksRoutes);
 
 app.get("/api/health", (_, res) => res.json({ status: "ok", ts: Date.now() }));
 

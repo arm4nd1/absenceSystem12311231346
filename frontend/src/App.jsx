@@ -14,6 +14,7 @@ import SessionsPage        from "./pages/SessionsPage";
 import ReportsPage         from "./pages/ReportsPage";
 import UsersPage           from "./pages/UsersPage";
 import ProfilePage         from "./pages/ProfilePage";
+import MarksPage           from "./pages/MarksPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,6 +64,8 @@ export default function App() {
                 element={<ProtectedRoute roles={["admin","instructor"]}><SessionsPage /></ProtectedRoute>} />
               <Route path="reports"
                 element={<ProtectedRoute roles={["admin","instructor"]}><ReportsPage  /></ProtectedRoute>} />
+              <Route path="marks"
+                element={<ProtectedRoute roles={["admin","instructor"]}><MarksPage    /></ProtectedRoute>} />
 
               {/* Admin only */}
               <Route path="users"

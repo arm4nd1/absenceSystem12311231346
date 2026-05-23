@@ -42,14 +42,10 @@ def get(url):
 # ── Bridge direct-inject: push fake scan events ───────────────────────────────
 
 def fake_scan(fp_id: int, score: int = 85):
-    """Directly POST a fake attendance record to the backend (bypass serial).
-    Requires a valid JWT token — get it from localStorage in the browser devtools."""
+    """POST a fake scan event to the bridge's /simulate-scan endpoint."""
     print(f"  [SIM] Sending scan: fp_id={fp_id} score={score}")
-    bridge_status = get(f"{BRIDGE_URL}/status")
-    if not bridge_status.get("sessionOpen"):
-        print("  [SIM] No session open — scan ignored.")
-        return
-    print(f"  [SIM] Bridge status: {bridge_status}")
+    result = post(f"{BRIDGE_URL}/simulate-scan", {"fp_id": fp_id, "score": score})
+    print(f"  [SIM] simulate-scan → {result}")
 
 def open_session_on_bridge(subject_id: str):
     result = post(f"{BRIDGE_URL}/session/open", {"subjectId": subject_id})
@@ -75,17 +71,16 @@ def auto_scan_thread(interval: float):
             fp_id = random.choice(_fp_ids)
             score = random.randint(70, 100)
             print(f"\n  [AUTO-SCAN] fp_id={fp_id} score={score}")
-            # Poke the bridge health so we can see it's working
-            bridge_status()
+            fake_scan(fp_id, score)
         time.sleep(interval)
 
 # ── Interactive menu ──────────────────────────────────────────────────────────
 
 def menu():
     global _auto_running, _fp_ids
-    print("\n" + "═"*52)
-    print("  Pico W2 Simulator — AttendFP")
-    print("═"*52)
+    print("\n" + "="*52)
+    print("  Pico W2 Simulator - AttendFP")
+    print("="*52)
     print("  Make sure bridge.py is running first!\n")
 
     while True:

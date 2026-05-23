@@ -1,7 +1,7 @@
 import { format } from "date-fns";
 import {
   Users, BookOpen, CheckCircle2, Clock3,
-  XCircle, Activity, Fingerprint, TrendingUp,
+  XCircle, Activity, Fingerprint, TrendingUp, GraduationCap,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip,
@@ -12,7 +12,18 @@ import LoadingSpinner   from "../components/LoadingSpinner";
 import StatusBadge      from "../components/StatusBadge";
 import { useAttendanceSummary, useRealtimeAttendance } from "../hooks/useAttendance";
 import { useActiveSessions, useBridgeStatus }          from "../hooks/useSessions";
-import { useSubjects } from "../hooks/useSubjects";
+import { useSubjects }     from "../hooks/useSubjects";
+import { useMarksSummary } from "../hooks/useMarks";
+
+function buildCurrentSemester() {
+  const now   = new Date();
+  const year  = now.getFullYear();
+  const month = now.getMonth() + 1;
+  // UoS: 1st semester ≈ Oct–Feb, 2nd semester ≈ Mar–Jul
+  const sem = month >= 3 && month <= 8 ? "2nd" : "1st";
+  const acYear = month >= 9 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+  return `${sem} Semester ${acYear}`;
+}
 
 const STATUS_COLORS = {
   present: "#10b981",
@@ -44,12 +55,14 @@ function StatCard({ icon: Icon, label, value, sub, color = "blue" }) {
 }
 
 export default function DashboardPage() {
-  const today = format(new Date(), "yyyy-MM-dd");
+  const today          = format(new Date(), "yyyy-MM-dd");
+  const currentSem     = buildCurrentSemester();
   const { data: summary, isLoading: sumLoading } = useAttendanceSummary();
   const { data: sessions = [] }                  = useActiveSessions();
   const { data: subjects = [] }                  = useSubjects();
   const { data: bridge }                         = useBridgeStatus();
   const { records, loading: recLoading }         = useRealtimeAttendance(null, today);
+  const { data: marksSummary }                   = useMarksSummary(currentSem);
 
   const pieData = summary
     ? Object.entries(summary.statusToday || {})
@@ -79,6 +92,53 @@ export default function DashboardPage() {
             <StatCard icon={Activity}   label="Active Sessions" value={summary?.activeSessions} color="yellow"
                       sub={summary?.activeSessions > 0 ? "● scanning now" : "no active session"} />
           </div>
+
+          {/* Marks summary */}
+          {marksSummary && marksSummary.totalRecords > 0 && (
+            <div className="card mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                  <GraduationCap size={18} className="text-indigo-400" />
+                  Marks Overview — {currentSem}
+                </h3>
+                <div className="flex items-center gap-4 text-xs text-slate-500">
+                  <span>
+                    <span className="text-emerald-400 font-semibold">{marksSummary.totalPassed}</span> passed
+                  </span>
+                  <span>
+                    <span className="text-red-400 font-semibold">{marksSummary.totalFailed}</span> failed
+                  </span>
+                  <span>
+                    Avg <span className="text-white font-semibold">{marksSummary.classAverage}</span>
+                  </span>
+                  <span className={`font-semibold ${marksSummary.passRate >= 60 ? "text-emerald-400" : "text-amber-400"}`}>
+                    {marksSummary.passRate}% pass rate
+                  </span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {marksSummary.bySubject.map(sub => (
+                  <div key={sub.subjectId}
+                       className="p-3 rounded-xl bg-slate-800/40 border border-slate-800">
+                    <p className="text-xs font-mono text-blue-400 mb-0.5">{sub.subjectCode}</p>
+                    <p className="text-sm text-white font-medium truncate mb-2">{sub.subjectName}</p>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-emerald-400">{sub.passed} pass</span>
+                      <span className="text-slate-700">·</span>
+                      <span className="text-red-400">{sub.failed} fail</span>
+                      <span className="ml-auto text-slate-400">avg {sub.classAverage}</span>
+                    </div>
+                    <div className="mt-2 h-1 rounded-full bg-slate-700">
+                      <div
+                        className="h-1 rounded-full bg-indigo-500 transition-all"
+                        style={{ width: `${sub.total > 0 ? Math.round((sub.passed / sub.total) * 100) : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Charts row */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
