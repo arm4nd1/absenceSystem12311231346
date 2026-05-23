@@ -43,8 +43,13 @@ async function buildContext() {
 
   const students  = studentsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
   const subjects  = subjectsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-  const attendance = attendanceSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-  const marks      = marksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const allAttendance = attendanceSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const allMarks   = marksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+  // Only consider data for students that currently exist
+  const activeStudentIds = new Set(students.map(s => s.id));
+  const attendance = allAttendance.filter(r => activeStudentIds.has(r.studentId));
+  const marks      = allMarks.filter(m => activeStudentIds.has(m.studentId));
 
   // Attendance stats per student
   const attByStudent = {};
