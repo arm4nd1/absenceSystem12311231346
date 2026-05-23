@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import {
   Users, BookOpen, CheckCircle2, Clock3,
   XCircle, Activity, Fingerprint, TrendingUp, GraduationCap,
+  Sparkles, RefreshCw,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip,
@@ -14,6 +15,7 @@ import { useAttendanceSummary, useRealtimeAttendance } from "../hooks/useAttenda
 import { useActiveSessions, useBridgeStatus }          from "../hooks/useSessions";
 import { useSubjects }     from "../hooks/useSubjects";
 import { useMarksSummary } from "../hooks/useMarks";
+import { useAIInsights }   from "../hooks/useAI";
 
 function buildCurrentSemester() {
   const now   = new Date();
@@ -63,6 +65,8 @@ export default function DashboardPage() {
   const { data: bridge }                         = useBridgeStatus();
   const { records, loading: recLoading }         = useRealtimeAttendance(null, today);
   const { data: marksSummary }                   = useMarksSummary(currentSem);
+  const { data: aiData, isLoading: aiLoading,
+          refetch: refetchInsights, isError: aiError } = useAIInsights();
 
   const pieData = summary
     ? Object.entries(summary.statusToday || {})
@@ -91,6 +95,51 @@ export default function DashboardPage() {
             <StatCard icon={CheckCircle2} label="Today's Scans" value={summary?.todayScans}     color="green"  />
             <StatCard icon={Activity}   label="Active Sessions" value={summary?.activeSessions} color="yellow"
                       sub={summary?.activeSessions > 0 ? "● scanning now" : "no active session"} />
+          </div>
+
+          {/* AI Insights */}
+          <div className="card mb-8 border border-indigo-900/40 bg-gradient-to-br from-slate-900 to-indigo-950/30">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                <Sparkles size={17} className="text-indigo-400" />
+                AI Insights
+                <span className="text-xs text-slate-500 font-normal ml-1">powered by Gemini</span>
+              </h3>
+              <button
+                onClick={() => refetchInsights()}
+                disabled={aiLoading}
+                className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-400
+                           hover:bg-indigo-500/10 transition-all disabled:opacity-40"
+                title="Refresh insights"
+              >
+                <RefreshCw size={14} className={aiLoading ? "animate-spin" : ""} />
+              </button>
+            </div>
+            {aiLoading ? (
+              <div className="flex items-center gap-2 text-slate-500 text-sm">
+                <RefreshCw size={13} className="animate-spin" /> Analysing your data…
+              </div>
+            ) : aiError ? (
+              <p className="text-sm text-slate-500">
+                Could not generate insights. Check your{" "}
+                <span className="text-indigo-400 font-mono">GEMINI_API_KEY</span> in{" "}
+                <span className="font-mono text-slate-400">backend/.env</span>.
+              </p>
+            ) : aiData?.insights ? (
+              <div className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+                {aiData.insights}
+              </div>
+            ) : (
+              <button
+                onClick={() => refetchInsights()}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm
+                           bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-600/30
+                           text-indigo-300 hover:text-indigo-200 transition-all"
+              >
+                <Sparkles size={14} />
+                Generate AI insights from your data
+              </button>
+            )}
           </div>
 
           {/* Marks summary */}

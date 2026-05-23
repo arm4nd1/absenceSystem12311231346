@@ -14,6 +14,7 @@ const subjectsRoutes   = require("./routes/subjects");
 const attendanceRoutes = require("./routes/attendance");
 const sessionsRoutes   = require("./routes/sessions");
 const marksRoutes      = require("./routes/marks");
+const aiRoutes         = require("./routes/ai");
 
 initFirebase();
 
@@ -40,6 +41,7 @@ app.use("/api/subjects",   subjectsRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/sessions",   sessionsRoutes);
 app.use("/api/marks",      marksRoutes);
+app.use("/api/ai",         aiRoutes);
 
 app.get("/api/health", (_, res) => res.json({ status: "ok", ts: Date.now() }));
 

@@ -6,6 +6,7 @@ import {
   ShieldCheck, UserCircle, GraduationCap,
 } from "lucide-react";
 import { useBridgeStatus } from "../hooks/useSessions";
+import AIChatWidget from "./AIChatWidget";
 import clsx from "clsx";
 
 export default function Layout() {
@@ -114,6 +115,9 @@ export default function Layout() {
       <main className="flex-1 overflow-y-auto bg-slate-950">
         <Outlet />
       </main>
+
+      {/* Floating AI chat — visible to instructors and admins */}
+      {isInstructor && <AIChatWidget />}
     </div>
   );
 }
